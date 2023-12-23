@@ -216,11 +216,19 @@ html = '''
             background-color: #FF0000;
             color: white;
         }
+        .echo{
+            width: 120px;
+            height: 120px;
+        }
+        .colr{
+        color: #FF0000;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Upload Excel File for Analysis</h1>
+        <img src="{{ url_for('static', filename='images/echominds.png') }}" alt="EchoMinds" class="echo">        <h1>Upload Excel File for Analysis</h1>
+        <p class="colr">The file should contain at lease these elements : Date ; Category ; Incomes ; Expenses</p>
         <form action="/analyze" method="post" enctype="multipart/form-data">
             <input type="file" name="file" accept=".xlsx, .xls" required>
             <input type="submit" value="Analyze">
@@ -268,17 +276,26 @@ html = '''
             var analysisId = document.getElementById('analysis-id').value;
             input.value = '';
             if(message) {
-                document.getElementById('chat-box').innerHTML += '<div>You: ' + message + '</div>';
+                document.getElementById('chat-box').innerHTML += '<div><b>You:</b> ' + message + '</div>';
                 fetch('/chat', {
                     method: 'POST',
                     body: JSON.stringify({'message': message, 'analysis_id': analysisId}),
                     headers: {'Content-Type': 'application/json'}
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    document.getElementById('chat-box').innerHTML += '<div>AI: ' + data.response + '</div>';
+                    document.getElementById('chat-box').innerHTML += '<div><b>FinAssist:</b> ' + data.response + '</div>';
                     var chatBox = document.getElementById('chat-box');
                     chatBox.scrollTop = chatBox.scrollHeight;
+                }) 
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                    document.getElementById('chat-box').innerHTML += '<div>Error: Unable to get response from AI</div>';
                 });
             }
         }

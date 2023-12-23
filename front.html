@@ -199,11 +199,20 @@
             background-color: #FF0000;
             color: white;
         }
+        .echo{
+            width: 120px;
+            height: 120;
+        }
+        .colr{
+        color: #FF0000;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <img src="images/echominds.png" alt="EchoMinds" class="echo">
         <h1>Upload Excel File for Analysis</h1>
+        <p class="colr">The file should contain at lease these elements : Date ; Category ; Incomes ; Expenses</p>
         <form action="/analyze" method="post" enctype="multipart/form-data">
             <input type="file" name="file" accept=".xlsx, .xls" required>
             <input type="submit" value="Analyze">
