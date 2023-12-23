@@ -241,7 +241,7 @@ html = '''
         {% endif %}
         {% if ai_analysis %}
             <div class="ai-analysis">
-                <h2>FinAssist Analysis:</h2>
+                <h2>AI-Driven Analysis:</h2>
                 <p>{{ ai_analysis|safe }}</p>
             </div>
         {% endif %}
@@ -295,7 +295,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = openai_api_key
 
 def get_chatgpt_analysis(query):
-    response = openai.Completion.create(model="text-davinci-003", prompt=query, max_tokens=500)
+    response = openai.Completion.create(model="text-davinci-003", prompt=query, max_tokens=300)
     return response['choices'][0]['text'].strip() if response else "No response or unexpected format from AI."
 
 def convert_image_to_base64(img_path):
