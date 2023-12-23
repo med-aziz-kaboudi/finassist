@@ -1,0 +1,120 @@
+from flask import Flask, request, render_template_string, jsonify, send_file
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
+import numpy as np
+
+app = Flask(__name__)
+
+sns.set(style="whitegrid")
+
+html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel File Analysis</title>
+</head>
+<body>
+    <h1>Upload Excel File for Analysis</h1>
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".xlsx, .xls" required>
+        <input type="submit" value="Analyze">
+    </form>
+    {% if plot_url %}
+        <img src="{{ plot_url }}" alt="Cumulative Profit/Loss Plot" style="max-width: 600px;">
+    {% endif %}
+    {% if pie_chart_url %}
+        <img src="{{ pie_chart_url }}" alt="Financial Distribution" style="max-width: 600px;">
+    {% endif %}
+    {% if summary %}
+        <h2>Yearly Summary:</h2>
+        <p>{{ summary|safe }}</p>
+    {% endif %}
+    {% if file_url %}
+        <a href="{{ file_url }}" download="analyzed_data.xlsx">Download Analyzed Data</a>
+    {% endif %}
+</body>
+</html>
+'''
+
+@app.route('/')
+def index():
+    return render_template_string(html)
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'file' not in request.files:
+        return 'No file part'
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return 'No selected file'
+
+    if file:
+        df = pd.read_excel(file)
+        df.columns = df.columns.str.lower()
+        required_columns = {'date', 'category', 'income', 'expenses'}
+        
+        if not required_columns.issubset(set(df.columns)):
+            return 'Excel file must contain Date, Category, Income, and Expenses columns'
+
+        # Cumulative Profit/Loss Plot
+        df['date'] = pd.to_datetime(df['date'])
+        df['net'] = df['income'] - df['expenses']
+        df['cumulative'] = df['net'].cumsum()
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.lineplot(x='date', y='cumulative', data=df, ax=ax, marker='o')
+        ax.axhline(y=0, color='red', linestyle='--')
+        ax.set_title('Cumulative Profit/Loss Over Time', fontsize=14)
+        ax.set_xlabel('Date', fontsize=10)
+        ax.set_ylabel('Cumulative Profit/Loss', fontsize=10)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        img = io.BytesIO()
+        plt.savefig(img, format='png', dpi=200)
+        plt.close()
+        img.seek(0)
+        plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+
+        # Pie Chart for Financial Distribution
+        category_summary = df.groupby('category').agg({'net': 'sum'})
+        # Filter out negative values for the pie chart
+        category_summary_positive = category_summary[category_summary['net'] > 0]
+        fig, ax = plt.subplots(figsize=(8, 8))
+        category_summary_positive.plot.pie(y='net', ax=ax, autopct='%1.1f%%', startangle=140, legend=False)
+        ax.set_ylabel('')
+        ax.set_title('Financial Distribution by Category (Positive Net Values)', fontsize=14)
+        plt.tight_layout()
+        pie_img = io.BytesIO()
+        plt.savefig(pie_img, format='png', dpi=200)
+        plt.close()
+        pie_img.seek(0)
+        pie_chart_url = base64.b64encode(pie_img.getvalue()).decode('utf8')
+
+
+        # Yearly Summary Calculations
+        df['year'] = df['date'].dt.year
+        yearly_summary = df.groupby('year').agg({'income': 'sum', 'expenses': 'sum', 'net': 'sum'})
+        yearly_summary['win_percentage'] = np.where(yearly_summary['net'] > 0, 
+                                                    yearly_summary['net'] / yearly_summary['income'] * 100, 
+                                                    0)
+        summary_html = yearly_summary.to_html(classes="table table-striped", float_format='%.2f')
+
+        # Save the analyzed data to an Excel file
+        analyzed_file_path = '/mnt/data/analyzed_financial_data.xlsx'
+        df.to_excel(analyzed_file_path, index=False)
+        file_url = '/download/' + analyzed_file_path.split('/')[-1]
+
+        return render_template_string(html, plot_url='data:image/png;base64,{}'.format(plot_url),
+                                      pie_chart_url='data:image/png;base64,{}'.format(pie_chart_url),
+                                      summary=summary_html, file_url=file_url)
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_file('/mnt/data/' + filename, as_attachment=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
