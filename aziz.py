@@ -241,7 +241,7 @@ html = '''
         {% endif %}
         {% if ai_analysis %}
             <div class="ai-analysis">
-                <h2>AI-Driven Analysis:</h2>
+                <h2>FinAssist Analysis:</h2>
                 <p>{{ ai_analysis|safe }}</p>
             </div>
         {% endif %}
