@@ -1,2 +1,6 @@
 .env
 .streamlit/secrets.toml
+newgoodversion.txt
+text.txt
+textdemifinal.txt
+streamlit_project.py
