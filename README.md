@@ -62,7 +62,7 @@ Contributions are welcome! Please fork the repository, make your changes, and op
 
 ## Powered by 
 
-Openai echominds
+Openai, EchoMinds.
 
 
 ## Home page repository link 
