@@ -223,9 +223,27 @@ html = '''
         .colr{
         color: #FF0000;
         }
+         .redirect-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #DD2222;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .redirect-button:hover {
+            background-color: #BE1E1E;
+        }
     </style>
 </head>
 <body>
+    <a href="https://chataifront-b695d6943c96.herokuapp.com/" class="redirect-button">LOG OUT</a>
+
     <div class="container">
         <img src="{{ url_for('static', filename='images/echominds.png') }}" alt="EchoMinds" class="echo">        <h1>Upload Excel File for Analysis</h1>
         <p class="colr">The file should contain at lease these elements : Date ; Category ; Incomes ; Expenses</p>
@@ -416,7 +434,17 @@ def chat():
         "hey": "Hey! Need any help?",
         "how are you": "I'm just a bot, but thanks for asking! How can I assist you?",
         "what's up": "Not much, I'm here to help you. What do you need?",
-        "bye": "Goodbye! Feel free to reach out if you need more help."
+        "bye": "Goodbye! Feel free to reach out if you need more help.",
+        "what's your name": "I'm FinAssist. How can I help you?",
+        "are you a robot": "I'm an Analisys AI chat bot. I can help you improve your financial stability.",
+        "what are you": "I'm an Analisys AI chat bot that can help you improve your financial stability.",
+        "more info":"If you want more informations about FinAssit you can visit our website or contact the EchoMinds.",
+        "who made you": "I'm an AI called FinAssist made by the amazing team EchoMinds!",
+        "contact": "If you have any technical issues or need personalized support, you can contact EchoMinds at echomindsteam@gmail.com.",
+        "privacy": "Your financial data is secure with FinAssist. We prioritize privacy and follow strict security measures.",
+        "thank you": "You're welcome! If you have any more questions or need further assistance, feel free to reach out.",
+        "features": "FinAssist excels at analyzing income, expenses, and more. Ask about specific features to explore its capabilities.",
+        "upgrade": "Thinking about advanced features? Consider subscribing to FinAssist plans for enhanced financial analysis tools."
     }
 
     # Respond to basic interactions
