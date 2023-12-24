@@ -64,6 +64,13 @@ Contributions are welcome! Please fork the repository, make your changes, and op
 
 Openai, EchoMinds.
 
+### Excel File Analysis
+
+- An example Excel file for data format can be found [here](https://docs.google.com/spreadsheets/d/1fuyEu78kPKcVQUbUke0PPRqEBGSj5_Lb/edit?usp=sharing&ouid=106166252782172094472&rtpof=true&sd=true).
+- Upload an Excel file with the required data format.
+- The system will analyze the data and provide a report.
+- You can further interact with the chatbot to ask specific questions about the data analysis results.
+
 
 ## Home page repository link 
 
