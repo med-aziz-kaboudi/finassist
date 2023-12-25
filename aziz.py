@@ -363,58 +363,88 @@ def index():
 def analyze():
     file = request.files.get('file')
     if file and file.filename:
-        analysis_id = str(uuid.uuid4())
-        df = pd.read_excel(file)
-        df.columns = df.columns.str.lower()
-        df['date'] = pd.to_datetime(df['date'])
-        df['net'] = df['income'] - df['expenses']
-        df['cumulative'] = df['net'].cumsum()
-        fig_cumulative, ax_cumulative = plt.subplots(figsize=(8, 4))
-        sns.lineplot(x='date', y='cumulative', data=df, ax=ax_cumulative, marker='o')
-        ax_cumulative.axhline(y=0, color='red', linestyle='--')
-        plt.tight_layout()
-        plot_img_path = 'cumulative_plot.png'
-        fig_cumulative.savefig(plot_img_path)
-        plt.close(fig_cumulative)
-        plot_url = convert_image_to_base64(plot_img_path)
-        category_summary = df.groupby('category').agg({'net': 'sum'})
-        category_summary_positive = category_summary[category_summary['net'] > 0]
-        fig_pie, ax_pie = plt.subplots(figsize=(8, 8))
-        category_summary_positive.plot.pie(y='net', ax=ax_pie, autopct='%1.1f%%', startangle=140, legend=False)
-        plt.tight_layout()
-        pie_img_path = 'pie_chart.png'
-        fig_pie.savefig(pie_img_path)
-        plt.close(fig_pie)
-        pie_chart_url = convert_image_to_base64(pie_img_path)
-        df['year'] = df['date'].dt.year
-        yearly_summary = df.groupby('year').agg({'income': 'sum', 'expenses': 'sum', 'net': 'sum'})
-        yearly_summary['win_percentage'] = np.where(yearly_summary['net'] > 0, yearly_summary['net'] / yearly_summary['income'] * 100, 0)
-        summary_html = yearly_summary.to_html(classes="table table-striped", float_format='%.2f')
-        query = f"Provide a financial analysis summary and suggestions for improvement based on the following data: {summary_html}"
-        ai_analysis = get_chatgpt_analysis(query)
+        try:
+            analysis_id = str(uuid.uuid4())
+            df = pd.read_excel(file)
+            df.columns = [col.lower() for col in df.columns]
 
-        analysis_results = {
-            "ai_analysis": ai_analysis,
-            "plot_url": plot_url,
-            "pie_chart_url": pie_chart_url,
-            "summary": summary_html
-        }
-        save_analysis_results(analysis_id, analysis_results)
+            # Check for required columns
+            required_columns = ['date', 'category', 'incomes', 'expenses']
+            missing_columns = [col for col in required_columns if col not in map(str.lower, df.columns)]
 
-        analyzed_file_path = 'analyzed_financial_data.xlsx'
-        wb = Workbook()
-        ws_data = wb.active
-        ws_data.title = "Financial Data"
-        for r in dataframe_to_rows(df, index=False, header=True):
-            ws_data.append(r)
-        insert_image_to_excel(ws_data, plot_img_path, 'A10')
-        insert_image_to_excel(ws_data, pie_img_path, 'A40')
-        wb.save(analyzed_file_path)
-        os.remove(plot_img_path)
-        os.remove(pie_img_path)
-        file_url = '/download/' + analyzed_file_path
-        return render_template_string(html, plot_url=plot_url, pie_chart_url=pie_chart_url, summary=summary_html, ai_analysis=ai_analysis, file_url=file_url, analysis_id=analysis_id)
-    return 'Invalid file'
+            if missing_columns:
+                return jsonify({'error': f'Missing required columns: {", ".join(missing_columns)}'}), 400
+
+            # Convert 'date' column to datetime
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+
+            # Calculate net and cumulative values
+            df['net'] = df['incomes'] - df['expenses']
+            df['cumulative'] = df['net'].cumsum()
+
+            # Plotting cumulative net values
+            fig_cumulative, ax_cumulative = plt.subplots(figsize=(8, 4))
+            sns.lineplot(x='date', y='cumulative', data=df, ax=ax_cumulative, marker='o')
+            ax_cumulative.axhline(y=0, color='red', linestyle='--')
+            plt.tight_layout()
+            plot_img_path = 'cumulative_plot.png'
+            fig_cumulative.savefig(plot_img_path)
+            plt.close(fig_cumulative)
+            plot_url = convert_image_to_base64(plot_img_path)
+
+            # Category-wise summary and pie chart
+            category_summary = df.groupby('category').agg({'net': 'sum'})
+            category_summary_positive = category_summary[category_summary['net'] > 0]
+            fig_pie, ax_pie = plt.subplots(figsize=(8, 8))
+            category_summary_positive.plot.pie(y='net', ax=ax_pie, autopct='%1.1f%%', startangle=140, legend=False)
+            plt.tight_layout()
+            pie_img_path = 'pie_chart.png'
+            fig_pie.savefig(pie_img_path)
+            plt.close(fig_pie)
+            pie_chart_url = convert_image_to_base64(pie_img_path)
+
+            # Yearly summary
+            df['year'] = df['date'].dt.year
+            yearly_summary = df.groupby('year').agg({'incomes': 'sum', 'expenses': 'sum', 'net': 'sum'})
+            yearly_summary['win_percentage'] = np.where(yearly_summary['net'] > 0, yearly_summary['net'] / yearly_summary['incomes'] * 100, 0)
+            summary_html = yearly_summary.to_html(classes="table table-striped", float_format='%.2f')
+
+            # Generate AI analysis
+            query = f"Provide a financial analysis summary and suggestions for improvement based on the following data: {summary_html}"
+            ai_analysis = get_chatgpt_analysis(query)
+
+            # Prepare analysis results
+            analysis_results = {
+                "ai_analysis": ai_analysis,
+                "plot_url": plot_url,
+                "pie_chart_url": pie_chart_url,
+                "summary": summary_html
+            }
+            save_analysis_results(analysis_id, analysis_results)
+
+            # Create an Excel workbook with the analyzed data and images
+            analyzed_file_path = f'analyzed_financial_data_{analysis_id}.xlsx'
+            wb = Workbook()
+            ws_data = wb.active
+            ws_data.title = "Financial Data"
+            for r in dataframe_to_rows(df, index=False, header=True):
+                ws_data.append(r)
+            insert_image_to_excel(ws_data, plot_img_path, 'A10')
+            insert_image_to_excel(ws_data, pie_img_path, 'A40')
+            wb.save(analyzed_file_path)
+
+            # Cleanup plot images
+            os.remove(plot_img_path)
+            os.remove(pie_img_path)
+
+            # Return the response
+            file_url = f'/download/{analysis_id}'
+            return render_template_string(html, plot_url=plot_url, pie_chart_url=pie_chart_url, summary=summary_html, ai_analysis=ai_analysis, file_url=file_url, analysis_id=analysis_id)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'No file provided or file has no filename'}), 400
 
 @app.route('/download/<filename>')
 def download_file(filename):
