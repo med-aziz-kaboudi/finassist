@@ -438,7 +438,7 @@ def analyze():
             os.remove(pie_img_path)
 
             # Return the response
-            file_url = f'/download/{analysis_id}'
+            file_url = '/download/' + analyzed_file_path
             return render_template_string(html, plot_url=plot_url, pie_chart_url=pie_chart_url, summary=summary_html, ai_analysis=ai_analysis, file_url=file_url, analysis_id=analysis_id)
 
         except Exception as e:
