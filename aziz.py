@@ -330,7 +330,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = openai_api_key
 
 def get_chatgpt_analysis(query):
-    response = openai.Completion.create(model="text-davinci-003", prompt=query, max_tokens=200)
+    response = openai.Completion.create(model="gpt-3.5-turbo-instruct", prompt=query, max_tokens=200)
     return response['choices'][0]['text'].strip() if response else "No response or unexpected format from AI."
 
 def convert_image_to_base64(img_path):
